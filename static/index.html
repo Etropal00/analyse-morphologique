@@ -258,6 +258,39 @@
     .upload-zone p { color: var(--text-muted); font-size: 1rem; overflow-wrap: break-word; }
     .upload-zone .upload-hint { color: var(--accent); font-weight: 500; }
     .upload-zone .upload-formats { margin-top: 0.35rem; font-size: 0.9rem; color: var(--text-subtle); }
+    .upload-source-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 1.25rem;
+    }
+    .upload-source-btns .btn-upload-source {
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-elevated);
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition), color var(--transition);
+      overflow-wrap: break-word;
+      white-space: normal;
+      text-align: center;
+    }
+    .upload-source-btns .btn-upload-source:hover { border-color: rgba(196, 165, 116, 0.4); background: var(--accent-soft); color: var(--accent); }
+    .upload-source-btns .btn-upload-source:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+    .upload-main-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      align-items: center;
+    }
+    .upload-main-actions .btn-primary { flex: 1; min-width: 200px; }
+    .upload-main-actions .btn-secondary { min-width: 140px; }
     .preview-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -470,6 +503,10 @@
       .preview-list { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
       .actions { flex-direction: column; }
       .actions .btn { width: 100%; min-width: 0; }
+      .upload-source-btns { flex-direction: column; }
+      .upload-source-btns .btn-upload-source { width: 100%; }
+      .upload-main-actions { flex-direction: column; }
+      .upload-main-actions .btn { width: 100%; min-width: 0; }
       .content-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -503,13 +540,18 @@
     <section class="card upload-block" id="uploadSection">
       <h2 class="card-title" data-i18n="uploadTitle">Zone d'upload</h2>
       <div class="upload-zone" id="uploadZone">
-        <input type="file" id="fileInput" accept="image/*" multiple aria-label="Sélectionner des photos">
+        <input type="file" id="fileInputGallery" accept="image/*" multiple aria-hidden="true" tabindex="-1">
+        <input type="file" id="fileInputCamera" accept="image/*" capture="environment" aria-hidden="true" tabindex="-1">
         <div class="upload-icon">↑</div>
         <p><span class="upload-hint" data-i18n="uploadHint">Cliquez ou glissez-déposez une ou plusieurs photos</span></p>
         <p class="upload-formats" data-i18n="uploadFormats">JPG, PNG — max 50 Mo par fichier</p>
       </div>
+      <div class="upload-source-btns">
+        <button type="button" class="btn-upload-source" id="btnChoosePhotos" data-i18n="btnChoosePhotos">Choisir des photos</button>
+        <button type="button" class="btn-upload-source" id="btnTakePhoto" data-i18n="btnTakePhoto">Prendre une photo</button>
+      </div>
       <div class="preview-list" id="previewList"></div>
-      <div class="actions">
+      <div class="upload-main-actions">
         <button type="button" class="btn btn-primary" id="btnAnalyze" disabled data-i18n="btnStartAnalysis">Lancer l'analyse</button>
         <button type="button" class="btn btn-secondary" id="btnClear" data-i18n="btnClearAll">Tout effacer</button>
       </div>
@@ -653,6 +695,8 @@
         uploadTitle: "Zone d'upload",
         uploadHint: 'Cliquez ou glissez-déposez une ou plusieurs photos',
         uploadFormats: 'JPG, PNG — max 50 Mo par fichier',
+        btnChoosePhotos: 'Choisir des photos',
+        btnTakePhoto: 'Prendre une photo',
         btnStartAnalysis: "Lancer l'analyse",
         btnClearAll: 'Tout effacer',
         reportTitle: 'Rapport de style personnalisé',
@@ -710,6 +754,8 @@
         uploadTitle: 'Upload zone',
         uploadHint: 'Click or drag and drop one or more photos',
         uploadFormats: 'JPG, PNG — max 50 MB per file',
+        btnChoosePhotos: 'Choose photos',
+        btnTakePhoto: 'Take a photo',
         btnStartAnalysis: 'Start analysis',
         btnClearAll: 'Clear all',
         reportTitle: 'Personal style report',
@@ -767,6 +813,8 @@
         uploadTitle: 'Zona de carga',
         uploadHint: 'Haz clic o arrastra una o varias fotos',
         uploadFormats: 'JPG, PNG — máximo 50 MB por archivo',
+        btnChoosePhotos: 'Elegir fotos',
+        btnTakePhoto: 'Tomar una foto',
         btnStartAnalysis: 'Iniciar análisis',
         btnClearAll: 'Borrar todo',
         reportTitle: 'Informe de estilo personalizado',
@@ -854,7 +902,8 @@
     });
 
     const uploadZone = document.getElementById('uploadZone');
-    const fileInput = document.getElementById('fileInput');
+    const fileInputGallery = document.getElementById('fileInputGallery');
+    const fileInputCamera = document.getElementById('fileInputCamera');
     const previewList = document.getElementById('previewList');
     const btnAnalyze = document.getElementById('btnAnalyze');
     const btnClear = document.getElementById('btnClear');
@@ -902,11 +951,19 @@
       clearMessage();
     }
 
-    uploadZone.addEventListener('click', (e) => { if (!e.target.closest('.remove')) fileInput.click(); });
-    fileInput.addEventListener('change', (e) => {
+    uploadZone.addEventListener('click', (e) => {
+      if (!e.target.closest('.remove') && !e.target.closest('.btn-upload-source')) fileInputGallery.click();
+    });
+    fileInputGallery.addEventListener('change', (e) => {
       addFiles(e.target.files);
       e.target.value = '';
     });
+    fileInputCamera.addEventListener('change', (e) => {
+      addFiles(e.target.files);
+      e.target.value = '';
+    });
+    document.getElementById('btnChoosePhotos').addEventListener('click', () => fileInputGallery.click());
+    document.getElementById('btnTakePhoto').addEventListener('click', () => fileInputCamera.click());
     uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
     uploadZone.addEventListener('drop', (e) => {
