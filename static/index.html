@@ -288,9 +288,10 @@
       gap: 1rem;
       margin-top: 1.5rem;
       align-items: center;
+      justify-content: center;
     }
-    .upload-main-actions .btn-primary { flex: 1; min-width: 200px; }
-    .upload-main-actions .btn-secondary { min-width: 140px; }
+    .upload-main-actions .btn-primary { width: 100%; max-width: 360px; min-width: 0; }
+    .upload-main-actions .btn-secondary { padding: 0.65rem 1.25rem; font-size: 0.9rem; opacity: 0.9; }
     .preview-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -532,7 +533,6 @@
       <p class="hero-sub" data-i18n="heroSub">Téléversez une ou plusieurs photos et recevez une analyse visuelle de style accompagnée de recommandations personnalisées.</p>
       <p class="hero-trust" data-i18n="heroTrust">Rapide. Privé. Simple à utiliser.</p>
       <div class="hero-btns">
-        <button type="button" class="btn btn-primary" id="btnScrollUpload" data-i18n="heroPrimary">Lancer l'analyse</button>
         <button type="button" class="btn btn-secondary" id="btnExampleReport" data-i18n="heroSecondary">Voir un exemple de rapport</button>
       </div>
     </section>
@@ -540,7 +540,9 @@
     <section class="card upload-block" id="uploadSection">
       <h2 class="card-title" data-i18n="uploadTitle">Zone d'upload</h2>
       <div class="upload-zone" id="uploadZone">
+        <!-- A. Galerie / fichiers : multiple, sans capture -->
         <input type="file" id="fileInputGallery" accept="image/*" multiple aria-hidden="true" tabindex="-1">
+        <!-- B. Caméra uniquement : capture="environment" pour ouvrir la caméra directe sur mobile -->
         <input type="file" id="fileInputCamera" accept="image/*" capture="environment" aria-hidden="true" tabindex="-1">
         <div class="upload-icon">↑</div>
         <p><span class="upload-hint" data-i18n="uploadHint">Cliquez ou glissez-déposez une ou plusieurs photos</span></p>
@@ -979,9 +981,6 @@
       reportCard.classList.remove('visible');
     });
 
-    document.getElementById('btnScrollUpload').addEventListener('click', () => {
-      document.getElementById('uploadSection').scrollIntoView({ behavior: 'smooth' });
-    });
 
     const exampleReport = {
       fr: "1. Description visuelle générale\n\nLes photos montrent une tenue décontractée avec une silhouette équilibrée.\n\n2. Points forts du style actuel\n\nLes coupes choisies mettent en valeur la silhouette. Les tons neutres créent une base versatile.\n\n3. Recommandations\n\nEncolures en V pour allonger la ligne. Matières fluides pour un confort optimal.\n\n4. Conclusion\n\nVotre style actuel est cohérent. Quelques ajustements de coupes et de couleurs pourraient le renforcer.",
