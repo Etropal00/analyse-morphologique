@@ -5,6 +5,7 @@ Upload de photos -> analyse IA -> rapport complet.
 """
 import os
 import base64
+import html
 import json
 from datetime import datetime
 from pathlib import Path
@@ -120,6 +121,12 @@ def analyze_images_with_ai(image_paths: list) -> dict:
         }
 
 
+@app.route("/healthz")
+def healthz():
+    """Health check pour Render."""
+    return "", 200
+
+
 @app.route("/")
 def index():
     """Page d'accueil."""
@@ -181,32 +188,51 @@ def analyze():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+_REPORT_TITLES = {
+    "fr": "Rapport de style personnalisé",
+    "en": "Personal style report",
+    "es": "Informe de estilo personalizado",
+}
+_REPORT_META = {
+    "fr": "Généré le",
+    "en": "Report generated on",
+    "es": "Informe generado el",
+}
+
+
 @app.route("/api/export-report", methods=["POST"])
 def export_report():
     """Génère un fichier HTML du rapport (téléchargeable)."""
     data = request.get_json() or {}
     rapport = data.get("rapport", "")
+    lang = (data.get("lang") or "fr").lower()[:2]
+    if lang not in _REPORT_TITLES:
+        lang = "fr"
     if not rapport:
         return jsonify({"success": False, "error": "Rapport vide"}), 400
 
+    title = _REPORT_TITLES[lang]
+    meta_label = _REPORT_META[lang]
+    date_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+    html_lang = "fr" if lang == "fr" else "es" if lang == "es" else "en"
+
     html = f"""<!DOCTYPE html>
-<html lang="fr">
+<html lang="{html_lang}">
 <head>
   <meta charset="UTF-8">
-  <title>Rapport d'analyse morphologique</title>
+  <title>{title} — StyleScan AI</title>
   <style>
     body {{ font-family: 'Segoe UI', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #1a1a1a; }}
     h1 {{ color: #2d3748; border-bottom: 2px solid #4a5568; padding-bottom: 0.5rem; }}
-    h2 {{ color: #4a5568; margin-top: 1.5rem; }}
     .meta {{ color: #718096; font-size: 0.9rem; margin-bottom: 2rem; }}
     pre {{ white-space: pre-wrap; background: #f7fafc; padding: 1rem; border-radius: 8px; }}
   </style>
 </head>
 <body>
-  <h1>Rapport d'analyse morphologique</h1>
-  <p class="meta">Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} — Programme d'analyse morphologique par IA</p>
+  <h1>{title}</h1>
+  <p class="meta">{meta_label} {date_str} — StyleScan AI</p>
   <div class="content">
-    <pre>{rapport}</pre>
+    <pre>{html.escape(rapport)}</pre>
   </div>
 </body>
 </html>"""

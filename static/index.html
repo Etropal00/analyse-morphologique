@@ -3,316 +3,856 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analyse morphologique — IA</title>
+  <title>StyleScan AI — Assistant d'analyse visuelle de style</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
   <style>
+    /* ========== DESIGN TOKENS ========== */
     :root {
-      --bg: #0f0f12;
-      --surface: #1a1a20;
-      --surface2: #24242c;
-      --accent: #c9a86c;
-      --accent-dim: #a68b52;
-      --text: #e8e6e3;
-      --text-muted: #9a958c;
-      --success: #6b9b6e;
-      --error: #c75c5c;
-      --radius: 14px;
-      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+      --bg: #08080a;
+      --surface: #0f0f12;
+      --surface-elevated: #16161a;
+      --surface-card: #131316;
+      --accent: #c4a574;
+      --accent-soft: rgba(196, 165, 116, 0.12);
+      --accent-hover: rgba(196, 165, 116, 0.2);
+      --text: #f0ede8;
+      --text-muted: #a39e94;
+      --text-subtle: #7a756d;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-focus: rgba(196, 165, 116, 0.5);
+      --success: #5a9b5e;
+      --success-soft: rgba(90, 155, 94, 0.15);
+      --error: #b85450;
+      --error-soft: rgba(184, 84, 80, 0.15);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --radius-xs: 8px;
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.3);
+      --transition: 0.2s ease;
+      --max-read: 65ch;
+      --container: min(1100px, 100vw - 2.5rem);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       font-family: 'Outfit', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      line-height: 1.5;
+      line-height: 1.65;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .container {
-      max-width: 900px;
+    .page-wrap {
+      max-width: var(--container);
       margin: 0 auto;
-      padding: 2rem 1.5rem;
+      padding: 0 1.5rem;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 3rem;
+    /* ========== HEADER ========== */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem 0;
+      background: rgba(8, 8, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
     }
-
-    h1 {
+    .header-inner {
+      width: 100%;
+      max-width: var(--container);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--accent);
+    }
+    .site-logo {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-ai {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 0.2rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .lang-selector {
+      display: flex;
+      background: var(--surface-elevated);
+      padding: 3px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+    }
+    .lang-btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.45rem 0.75rem;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color var(--transition), background var(--transition);
+    }
+    .lang-btn:hover { color: var(--text); background: var(--accent-soft); }
+    .lang-btn.active { background: var(--accent-soft); color: var(--accent); }
+
+    /* ========== HERO ========== */
+    .hero {
+      text-align: center;
+      padding: 4rem 0 4.5rem;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.25rem, 6vw, 3.5rem);
       font-weight: 600;
       color: var(--accent);
       letter-spacing: 0.02em;
+      margin-bottom: 1.25rem;
+      line-height: 1.15;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
-
-    .subtitle {
+    .hero-sub {
+      font-size: clamp(1.05rem, 2.2vw, 1.2rem);
       color: var(--text-muted);
-      font-size: 1rem;
-      font-weight: 300;
-      margin-top: 0.5rem;
+      max-width: var(--max-read);
+      margin: 0 auto 1.25rem;
+      line-height: 1.65;
+      overflow-wrap: break-word;
     }
-
-    .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 2rem;
-      margin-bottom: 1.5rem;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,0.06);
+    .hero-trust {
+      font-size: 0.9rem;
+      color: var(--text-subtle);
+      margin-bottom: 2.25rem;
+      letter-spacing: 0.02em;
     }
-
-    .upload-zone {
-      border: 2px dashed rgba(201, 168, 108, 0.4);
-      border-radius: var(--radius);
-      padding: 2.5rem;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      background: rgba(201, 168, 108, 0.04);
-    }
-
-    .upload-zone:hover, .upload-zone.dragover {
-      border-color: var(--accent);
-      background: rgba(201, 168, 108, 0.08);
-    }
-
-    .upload-zone input[type="file"] {
-      display: none;
-    }
-
-    .upload-zone .icon {
-      font-size: 2.5rem;
-      margin-bottom: 0.75rem;
-      opacity: 0.9;
-    }
-
-    .upload-zone p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
-
-    .upload-zone strong {
-      color: var(--accent);
-    }
-
-    .preview-list {
+    .hero-btns {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-top: 1.25rem;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .hero-btns .btn { min-width: 0; }
+
+    /* ========== BUTTONS ========== */
+    .btn {
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 0.9rem 1.75rem;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+      text-align: center;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+    .btn-primary {
+      background: linear-gradient(145deg, #c4a574 0%, #a88b5c 100%);
+      color: #0a0a0a;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba(196, 165, 116, 0.3);
+    }
+    .btn-secondary {
+      background: var(--surface-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) { background: var(--surface-card); border-color: rgba(255,255,255,0.1); }
+
+    /* ========== CARDS ========== */
+    .card {
+      background: var(--surface-card);
+      border-radius: var(--radius);
+      padding: 2.25rem;
+      margin-bottom: 2.5rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.35rem, 3vw, 1.65rem);
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+      line-height: 1.3;
+      overflow-wrap: break-word;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.35rem, 3vw, 1.65rem);
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      text-align: center;
+      line-height: 1.3;
+      overflow-wrap: break-word;
     }
 
+    /* ========== UPLOAD ZONE ========== */
+    .upload-block .card-title { margin-bottom: 1.5rem; }
+    .upload-zone {
+      border: 2px dashed rgba(196, 165, 116, 0.35);
+      border-radius: var(--radius);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+      background: var(--accent-soft);
+      position: relative;
+    }
+    .upload-zone:hover { border-color: var(--accent); background: var(--accent-hover); }
+    .upload-zone.dragover { border-color: var(--accent); background: var(--accent-hover); box-shadow: 0 0 0 4px var(--accent-soft); }
+    .upload-zone:focus-within { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+    .upload-zone.loading { pointer-events: none; opacity: 0.85; }
+    .upload-zone input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0); }
+    .upload-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 1.25rem;
+      background: var(--accent-soft);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      color: var(--accent);
+    }
+    .upload-zone p { color: var(--text-muted); font-size: 1rem; overflow-wrap: break-word; }
+    .upload-zone .upload-hint { color: var(--accent); font-weight: 500; }
+    .upload-zone .upload-formats { margin-top: 0.35rem; font-size: 0.9rem; color: var(--text-subtle); }
+    .preview-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
     .preview-item {
       position: relative;
-      width: 100px;
-      height: 100px;
-      border-radius: 10px;
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
       overflow: hidden;
-      background: var(--surface2);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
     }
-
-    .preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .preview-item .remove {
       position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 24px;
-      height: 24px;
+      top: 6px;
+      right: 6px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: var(--error);
       color: white;
       border: none;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 1.1rem;
       line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.9;
+      transition: opacity var(--transition), transform var(--transition);
+      box-shadow: var(--shadow-sm);
     }
-
-    .preview-item .remove:hover {
-      opacity: 1;
-    }
-
-    .actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1rem;
-      font-weight: 500;
-      padding: 0.85rem 1.75rem;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-      color: var(--bg);
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(201, 168, 108, 0.35);
-    }
-
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: #2e2e38;
-    }
-
+    .preview-item .remove:hover { opacity: 1; transform: scale(1.05); }
+    .actions { display: flex; gap: 1rem; margin-top: 1.75rem; flex-wrap: wrap; }
+    .actions .btn { flex: 1; min-width: 140px; }
     .loader {
       display: inline-block;
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border: 2px solid rgba(0,0,0,0.2);
       border-top-color: currentColor;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.7s linear infinite;
       vertical-align: middle;
       margin-right: 8px;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .message { padding: 1rem 1.25rem; border-radius: var(--radius-sm); margin-top: 1rem; font-size: 0.95rem; overflow-wrap: break-word; }
+    .message.error { background: var(--error-soft); color: #e8b4b2; border: 1px solid rgba(184, 84, 80, 0.35); }
+    .message.success { background: var(--success-soft); color: #a8d4ab; border: 1px solid rgba(90, 155, 94, 0.35); }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .report-card {
-      display: none;
-    }
-
-    .report-card.visible {
-      display: block;
-    }
-
-    .report-card h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
-      color: var(--accent);
-      margin-bottom: 1rem;
-    }
-
-    .report-content {
-      background: var(--surface2);
-      border-radius: 10px;
-      padding: 1.5rem;
-      white-space: pre-wrap;
-      font-size: 0.95rem;
-      line-height: 1.7;
-      color: var(--text);
+    /* ========== REPORT CARD ========== */
+    .report-card { display: none; background: var(--surface-elevated); border-color: rgba(196, 165, 116, 0.15); }
+    .report-card.visible { display: block; }
+    .report-meta { color: var(--text-subtle); font-size: 0.875rem; margin-bottom: 1.25rem; }
+    .report-content-wrap {
+      background: var(--surface-card);
+      border-radius: var(--radius-sm);
+      padding: 1.75rem;
+      border: 1px solid var(--border);
       max-height: 70vh;
       overflow-y: auto;
     }
-
-    .report-meta {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      margin-bottom: 1rem;
+    .report-content-wrap::-webkit-scrollbar { width: 8px; }
+    .report-content-wrap::-webkit-scrollbar-track { background: var(--surface); border-radius: 4px; }
+    .report-content-wrap::-webkit-scrollbar-thumb { background: var(--text-subtle); border-radius: 4px; }
+    .report-content {
+      white-space: pre-wrap;
+      font-size: 0.9875rem;
+      line-height: 1.8;
+      color: var(--text);
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
+    .report-content-wrap .report-content { margin: 0; }
+    .report-card .actions { margin-top: 1.5rem; }
 
-    .message {
-      padding: 1rem;
-      border-radius: 10px;
+    /* ========== HOW IT WORKS ========== */
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.75rem;
       margin-top: 1rem;
     }
-
-    .message.error {
-      background: rgba(199, 92, 92, 0.15);
-      color: #e8a0a0;
-      border: 1px solid rgba(199, 92, 92, 0.3);
-    }
-
-    .message.success {
-      background: rgba(107, 155, 110, 0.15);
-      color: #a8d4ab;
-      border: 1px solid rgba(107, 155, 110, 0.3);
-    }
-
-    footer {
+    .how-step {
+      background: var(--surface-elevated);
+      border-radius: var(--radius);
+      padding: 2rem 1.5rem;
       text-align: center;
+      border: 1px solid var(--border);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .how-step:hover { border-color: rgba(196, 165, 116, 0.2); box-shadow: var(--shadow-sm); }
+    .how-step .num {
+      display: inline-flex;
+      width: 44px;
+      height: 44px;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 1.15rem;
+      margin-bottom: 1rem;
+    }
+    .how-step h3 { font-size: 1.05rem; color: var(--text); margin-bottom: 0.4rem; line-height: 1.35; overflow-wrap: break-word; }
+    .how-step p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; overflow-wrap: break-word; }
+
+    /* ========== WHAT'S INCLUDED ========== */
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    .content-list {
+      list-style: none;
+      padding: 0;
+    }
+    .content-list li {
+      padding: 0.75rem 0 0.75rem 1.5rem;
+      position: relative;
       color: var(--text-muted);
-      font-size: 0.85rem;
-      margin-top: 3rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid rgba(255,255,255,0.06);
+      line-height: 1.55;
+      overflow-wrap: break-word;
+    }
+    .content-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 1.1rem;
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    /* ========== ABOUT ========== */
+    .about-text { color: var(--text-muted); line-height: 1.75; max-width: var(--max-read); overflow-wrap: break-word; }
+
+    /* ========== FAQ ACCORDION ========== */
+    .faq-list { padding: 0; list-style: none; }
+    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 0;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: color var(--transition);
+      line-height: 1.4;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+    .faq-trigger:hover { color: var(--accent); }
+    .faq-trigger:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+    .faq-trigger .faq-icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+      transition: transform 0.25s ease, color var(--transition);
+    }
+    .faq-item.open .faq-icon { transform: rotate(180deg); color: var(--accent); }
+    .faq-panel {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s ease;
+    }
+    .faq-panel-inner {
+      padding: 0 0 1.25rem 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      overflow-wrap: break-word;
+    }
+
+    /* ========== FOOTER ========== */
+    .site-footer {
+      text-align: center;
+      padding: 3rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .site-footer .brand { justify-content: center; margin-bottom: 0.5rem; }
+    .footer-tagline { font-size: 0.9rem; color: var(--text-subtle); max-width: 360px; margin: 0 auto; line-height: 1.5; overflow-wrap: break-word; }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 900px) {
+      .how-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .hero { padding: 3rem 0 3.5rem; }
+      .hero-btns { flex-direction: column; width: 100%; }
+      .hero-btns .btn { width: 100%; }
+      .card { padding: 1.5rem; }
+      .upload-zone { padding: 2rem 1.5rem; }
+      .preview-list { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+      .actions { flex-direction: column; }
+      .actions .btn { width: 100%; min-width: 0; }
+      .content-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Analyse morphologique</h1>
-      <p class="subtitle">Téléversez une ou plusieurs photos — l’IA rédige un rapport complet</p>
-    </header>
+  <header class="site-header">
+    <div class="header-inner page-wrap">
+      <a href="#" class="brand" aria-label="StyleScan AI">
+        <span class="site-logo" data-i18n="appName">StyleScan AI</span>
+        <span class="badge-ai" data-i18n="badgeAI">AI-powered</span>
+      </a>
+      <nav class="lang-selector" aria-label="Choisir la langue">
+        <button type="button" class="lang-btn active" data-lang="fr" aria-label="Français">FR</button>
+        <button type="button" class="lang-btn" data-lang="en" aria-label="English">EN</button>
+        <button type="button" class="lang-btn" data-lang="es" aria-label="Español">ES</button>
+      </nav>
+    </div>
+  </header>
 
-    <div class="card">
+  <main class="page-wrap">
+    <section class="hero">
+      <h1 data-i18n="heroTitle">StyleScan AI</h1>
+      <p class="hero-sub" data-i18n="heroSub">Téléversez une ou plusieurs photos et recevez une analyse visuelle de style accompagnée de recommandations personnalisées.</p>
+      <p class="hero-trust" data-i18n="heroTrust">Rapide. Privé. Simple à utiliser.</p>
+      <div class="hero-btns">
+        <button type="button" class="btn btn-primary" id="btnScrollUpload" data-i18n="heroPrimary">Lancer l'analyse</button>
+        <button type="button" class="btn btn-secondary" id="btnExampleReport" data-i18n="heroSecondary">Voir un exemple de rapport</button>
+      </div>
+    </section>
+
+    <section class="card upload-block" id="uploadSection">
+      <h2 class="card-title" data-i18n="uploadTitle">Zone d'upload</h2>
       <div class="upload-zone" id="uploadZone">
-        <input type="file" id="fileInput" accept="image/*" multiple>
-        <div class="icon">📷</div>
-        <p><strong>Cliquez ou glissez-déposez</strong> une ou plusieurs photos</p>
-        <p style="margin-top: 0.25rem;">JPG, PNG — max 50 Mo par fichier</p>
+        <input type="file" id="fileInput" accept="image/*" multiple aria-label="Sélectionner des photos">
+        <div class="upload-icon">↑</div>
+        <p><span class="upload-hint" data-i18n="uploadHint">Cliquez ou glissez-déposez une ou plusieurs photos</span></p>
+        <p class="upload-formats" data-i18n="uploadFormats">JPG, PNG — max 50 Mo par fichier</p>
       </div>
       <div class="preview-list" id="previewList"></div>
       <div class="actions">
-        <button type="button" class="btn btn-primary" id="btnAnalyze" disabled>
-          Lancer l’analyse
-        </button>
-        <button type="button" class="btn btn-secondary" id="btnClear">
-          Tout effacer
-        </button>
+        <button type="button" class="btn btn-primary" id="btnAnalyze" disabled data-i18n="btnStartAnalysis">Lancer l'analyse</button>
+        <button type="button" class="btn btn-secondary" id="btnClear" data-i18n="btnClearAll">Tout effacer</button>
       </div>
       <div id="message"></div>
-    </div>
+    </section>
 
-    <div class="card report-card" id="reportCard">
-      <h2>Rapport d’analyse</h2>
+    <section class="card report-card" id="reportCard">
+      <h2 class="card-title" data-i18n="reportTitle">Rapport de style personnalisé</h2>
       <p class="report-meta" id="reportMeta"></p>
-      <div class="report-content" id="reportContent"></div>
-      <div class="actions" style="margin-top: 1rem;">
-        <button type="button" class="btn btn-primary" id="btnExport">
-          Télécharger le rapport (HTML)
-        </button>
+      <div class="report-content-wrap">
+        <div class="report-content" id="reportContent"></div>
       </div>
-    </div>
-  </div>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btnExport" data-i18n="btnDownloadReport">Télécharger le rapport (HTML)</button>
+      </div>
+    </section>
 
-  <footer>
-    Programme d’analyse morphologique par IA — Rapport confidentiel
-  </footer>
+    <section class="card">
+      <h2 class="section-title" data-i18n="howTitle">Comment ça fonctionne</h2>
+      <div class="how-grid">
+        <div class="how-step">
+          <div class="num">1</div>
+          <h3 data-i18n="how1Title">Téléversez vos photos</h3>
+          <p data-i18n="how1Desc">Choisissez une ou plusieurs images claires.</p>
+        </div>
+        <div class="how-step">
+          <div class="num">2</div>
+          <h3 data-i18n="how2Title">Lancez l'analyse</h3>
+          <p data-i18n="how2Desc">L'IA analyse les éléments visuels de votre style.</p>
+        </div>
+        <div class="how-step">
+          <div class="num">3</div>
+          <h3 data-i18n="how3Title">Recevez votre rapport</h3>
+          <p data-i18n="how3Desc">Obtenez un rapport structuré avec recommandations.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title" data-i18n="contentTitle">Ce que contient le rapport</h2>
+      <ul class="content-list">
+        <li data-i18n="content1">Description visuelle générale</li>
+        <li data-i18n="content2">Points forts du style actuel</li>
+        <li data-i18n="content3">Recommandations sur les coupes</li>
+        <li data-i18n="content4">Suggestions de couleurs</li>
+        <li data-i18n="content5">Conseils pratiques</li>
+        <li data-i18n="content6">Conclusion</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title" data-i18n="aboutTitle">À propos de StyleScan AI</h2>
+      <p class="about-text" data-i18n="aboutText">StyleScan AI est une mini-application d'analyse visuelle qui génère un rapport personnalisé à partir de photos. L'outil propose des observations sur le style actuel et suggère des améliorations simples pour l'apparence générale.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title" data-i18n="faqTitle">Questions fréquentes</h2>
+      <ul class="faq-list" id="faqList">
+        <li class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-panel-1" id="faq-trigger-1">
+            <span data-i18n="faq1q">Que fait StyleScan AI ?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-panel" id="faq-panel-1" role="region" aria-labelledby="faq-trigger-1">
+            <div class="faq-panel-inner" data-i18n="faq1a">StyleScan AI analyse des photos et génère un rapport de style personnalisé.</div>
+          </div>
+        </li>
+        <li class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-panel-2" id="faq-trigger-2">
+            <span data-i18n="faq2q">Est-ce une analyse médicale ?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-panel" id="faq-panel-2" role="region" aria-labelledby="faq-trigger-2">
+            <div class="faq-panel-inner" data-i18n="faq2a">Non. Il s'agit uniquement d'une analyse de style visuel.</div>
+          </div>
+        </li>
+        <li class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-panel-3" id="faq-trigger-3">
+            <span data-i18n="faq3q">Combien de photos puis-je envoyer ?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-panel" id="faq-panel-3" role="region" aria-labelledby="faq-trigger-3">
+            <div class="faq-panel-inner" data-i18n="faq3a">Une ou plusieurs photos peuvent être utilisées.</div>
+          </div>
+        </li>
+        <li class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-panel-4" id="faq-trigger-4">
+            <span data-i18n="faq4q">Quel type de photo fonctionne le mieux ?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-panel" id="faq-panel-4" role="region" aria-labelledby="faq-trigger-4">
+            <div class="faq-panel-inner" data-i18n="faq4a">Les photos nettes, bien éclairées et représentatives donnent généralement les meilleurs résultats.</div>
+          </div>
+        </li>
+        <li class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-panel-5" id="faq-trigger-5">
+            <span data-i18n="faq5q">Les photos sont-elles conservées ?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-panel" id="faq-panel-5" role="region" aria-labelledby="faq-trigger-5">
+            <div class="faq-panel-inner" data-i18n="faq5a">Les images sont utilisées uniquement pour générer le rapport.</div>
+          </div>
+        </li>
+        <li class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-panel-6" id="faq-trigger-6">
+            <span data-i18n="faq6q">Le rapport remplace-t-il un professionnel ?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-panel" id="faq-panel-6" role="region" aria-labelledby="faq-trigger-6">
+            <div class="faq-panel-inner" data-i18n="faq6a">Non. Il s'agit d'un outil d'aide et d'inspiration.</div>
+          </div>
+        </li>
+        <li class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-panel-7" id="faq-trigger-7">
+            <span data-i18n="faq7q">Puis-je utiliser l'outil sur mobile ?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-panel" id="faq-panel-7" role="region" aria-labelledby="faq-trigger-7">
+            <div class="faq-panel-inner" data-i18n="faq7a">Oui. L'interface est parfaitement responsive.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <footer class="site-footer">
+      <a href="#" class="brand"><span class="site-logo" data-i18n="appName">StyleScan AI</span></a>
+      <p class="footer-tagline" data-i18n="footerTrust">Analyse visuelle de style, simple et élégante.</p>
+    </footer>
+  </main>
 
   <script>
+    const t = {
+      fr: {
+        appName: 'StyleScan AI',
+        badgeAI: 'AI-powered',
+        heroTitle: 'StyleScan AI',
+        heroSub: 'Téléversez une ou plusieurs photos et recevez une analyse visuelle de style accompagnée de recommandations personnalisées.',
+        heroTrust: 'Rapide. Privé. Simple à utiliser.',
+        heroPrimary: "Lancer l'analyse",
+        heroSecondary: 'Voir un exemple de rapport',
+        uploadTitle: "Zone d'upload",
+        uploadHint: 'Cliquez ou glissez-déposez une ou plusieurs photos',
+        uploadFormats: 'JPG, PNG — max 50 Mo par fichier',
+        btnStartAnalysis: "Lancer l'analyse",
+        btnClearAll: 'Tout effacer',
+        reportTitle: 'Rapport de style personnalisé',
+        reportGeneratedOn: 'Rapport généré le',
+        btnDownloadReport: 'Télécharger le rapport (HTML)',
+        howTitle: 'Comment ça fonctionne',
+        how1Title: 'Téléversez vos photos',
+        how1Desc: 'Choisissez une ou plusieurs images claires.',
+        how2Title: "Lancez l'analyse",
+        how2Desc: "L'IA analyse les éléments visuels de votre style.",
+        how3Title: 'Recevez votre rapport',
+        how3Desc: 'Obtenez un rapport structuré avec recommandations.',
+        contentTitle: 'Ce que contient le rapport',
+        content1: 'Description visuelle générale',
+        content2: 'Points forts du style actuel',
+        content3: 'Recommandations sur les coupes',
+        content4: 'Suggestions de couleurs',
+        content5: 'Conseils pratiques',
+        content6: 'Conclusion',
+        aboutTitle: 'À propos de StyleScan AI',
+        aboutText: "StyleScan AI est une mini-application d'analyse visuelle qui génère un rapport personnalisé à partir de photos. L'outil propose des observations sur le style actuel et suggère des améliorations simples pour l'apparence générale.",
+        faqTitle: 'Questions fréquentes',
+        faq1q: 'Que fait StyleScan AI ?',
+        faq1a: 'StyleScan AI analyse des photos et génère un rapport de style personnalisé.',
+        faq2q: "Est-ce une analyse médicale ?",
+        faq2a: "Non. Il s'agit uniquement d'une analyse de style visuel.",
+        faq3q: 'Combien de photos puis-je envoyer ?',
+        faq3a: 'Une ou plusieurs photos peuvent être utilisées.',
+        faq4q: 'Quel type de photo fonctionne le mieux ?',
+        faq4a: 'Les photos nettes, bien éclairées et représentatives donnent généralement les meilleurs résultats.',
+        faq5q: 'Les photos sont-elles conservées ?',
+        faq5a: "Les images sont utilisées uniquement pour générer le rapport.",
+        faq6q: "Le rapport remplace-t-il un professionnel ?",
+        faq6a: "Non. Il s'agit d'un outil d'aide et d'inspiration.",
+        faq7q: "Puis-je utiliser l'outil sur mobile ?",
+        faq7a: "Oui. L'interface est parfaitement responsive.",
+        footerTrust: 'Analyse visuelle de style, simple et élégante.',
+        msgImagesOnly: 'Seules les images sont acceptées.',
+        msgSuccess: 'Rapport généré avec succès.',
+        msgError: "Erreur lors de l'analyse.",
+        msgNetworkError: 'Erreur réseau : ',
+        msgGenerateFirst: "Générez d'abord un rapport.",
+        msgExportOk: 'Téléchargement du rapport lancé.',
+        msgExportError: 'Erreur export.',
+        msgAnalyzing: 'Analyse en cours…',
+      },
+      en: {
+        appName: 'StyleScan AI',
+        badgeAI: 'AI-powered',
+        heroTitle: 'StyleScan AI',
+        heroSub: 'Upload one or more photos and receive a visual style analysis with personalized recommendations.',
+        heroTrust: 'Fast. Private. Easy to use.',
+        heroPrimary: 'Start analysis',
+        heroSecondary: 'View sample report',
+        uploadTitle: 'Upload zone',
+        uploadHint: 'Click or drag and drop one or more photos',
+        uploadFormats: 'JPG, PNG — max 50 MB per file',
+        btnStartAnalysis: 'Start analysis',
+        btnClearAll: 'Clear all',
+        reportTitle: 'Personal style report',
+        reportGeneratedOn: 'Report generated on',
+        btnDownloadReport: 'Download report (HTML)',
+        howTitle: 'How it works',
+        how1Title: 'Upload your photos',
+        how1Desc: 'Choose one or more clear images.',
+        how2Title: 'Start the analysis',
+        how2Desc: 'The AI analyzes the visual elements of your style.',
+        how3Title: 'Get your report',
+        how3Desc: 'Receive a structured report with recommendations.',
+        contentTitle: "What the report includes",
+        content1: 'General visual description',
+        content2: 'Strengths of the current style',
+        content3: 'Recommendations on clothing cuts',
+        content4: 'Color suggestions',
+        content5: 'Practical tips',
+        content6: 'Conclusion',
+        aboutTitle: 'About StyleScan AI',
+        aboutText: 'StyleScan AI is a visual analysis mini-application that generates a personalized report based on photos. The tool highlights style observations and suggests simple improvements for overall appearance.',
+        faqTitle: 'Frequently asked questions',
+        faq1q: 'What does StyleScan AI do?',
+        faq1a: 'StyleScan AI analyzes photos and generates a personalized style report.',
+        faq2q: 'Is this a medical analysis?',
+        faq2a: 'No. This is a visual style analysis only.',
+        faq3q: 'How many photos can I upload?',
+        faq3a: 'You can upload one or several photos.',
+        faq4q: 'What type of photo works best?',
+        faq4a: 'Clear, well-lit and representative photos usually work best.',
+        faq5q: 'Are the photos stored?',
+        faq5a: 'Images are used only to generate the report.',
+        faq6q: 'Does the report replace a professional?',
+        faq6a: 'No. It is an assistance and inspiration tool.',
+        faq7q: 'Can I use it on mobile?',
+        faq7a: 'Yes. The interface is fully responsive.',
+        footerTrust: 'Simple and elegant visual style analysis.',
+        msgImagesOnly: 'Only images are accepted.',
+        msgSuccess: 'Report generated successfully.',
+        msgError: 'Analysis error.',
+        msgNetworkError: 'Network error: ',
+        msgGenerateFirst: 'Generate a report first.',
+        msgExportOk: 'Report download started.',
+        msgExportError: 'Export error.',
+        msgAnalyzing: 'Analysis in progress…',
+      },
+      es: {
+        appName: 'StyleScan AI',
+        badgeAI: 'IA',
+        heroTitle: 'StyleScan AI',
+        heroSub: 'Sube una o varias fotos y recibe un análisis visual de estilo con recomendaciones personalizadas.',
+        heroTrust: 'Rápido. Privado. Fácil de usar.',
+        heroPrimary: 'Iniciar análisis',
+        heroSecondary: 'Ver ejemplo de informe',
+        uploadTitle: 'Zona de carga',
+        uploadHint: 'Haz clic o arrastra una o varias fotos',
+        uploadFormats: 'JPG, PNG — máximo 50 MB por archivo',
+        btnStartAnalysis: 'Iniciar análisis',
+        btnClearAll: 'Borrar todo',
+        reportTitle: 'Informe de estilo personalizado',
+        reportGeneratedOn: 'Informe generado el',
+        btnDownloadReport: 'Descargar informe (HTML)',
+        howTitle: 'Cómo funciona',
+        how1Title: 'Sube tus fotos',
+        how1Desc: 'Elige una o varias imágenes claras.',
+        how2Title: 'Inicia el análisis',
+        how2Desc: 'La IA analiza los elementos visuales de tu estilo.',
+        how3Title: 'Recibe tu informe',
+        how3Desc: 'Obtén un informe estructurado con recomendaciones.',
+        contentTitle: 'Qué incluye el informe',
+        content1: 'Descripción visual general',
+        content2: 'Puntos fuertes del estilo actual',
+        content3: 'Recomendaciones sobre cortes de ropa',
+        content4: 'Sugerencias de colores',
+        content5: 'Consejos prácticos',
+        content6: 'Conclusión',
+        aboutTitle: 'Acerca de StyleScan AI',
+        aboutText: 'StyleScan AI es una mini aplicación de análisis visual que genera un informe personalizado a partir de fotos. La herramienta ofrece observaciones sobre el estilo y sugiere mejoras simples para la apariencia general.',
+        faqTitle: 'Preguntas frecuentes',
+        faq1q: '¿Qué hace StyleScan AI?',
+        faq1a: 'StyleScan AI analiza fotos y genera un informe de estilo personalizado.',
+        faq2q: '¿Es un análisis médico?',
+        faq2a: 'No. Es únicamente un análisis visual de estilo.',
+        faq3q: '¿Cuántas fotos puedo subir?',
+        faq3a: 'Puedes subir una o varias fotos.',
+        faq4q: '¿Qué tipo de foto funciona mejor?',
+        faq4a: 'Las fotos claras, bien iluminadas y representativas suelen dar mejores resultados.',
+        faq5q: '¿Se guardan las fotos?',
+        faq5a: 'Las imágenes se usan solo para generar el informe.',
+        faq6q: '¿El informe reemplaza a un profesional?',
+        faq6a: 'No. Es una herramienta de ayuda e inspiración.',
+        faq7q: '¿Puedo usar la herramienta en móvil?',
+        faq7a: 'Sí. La interfaz es totalmente responsive.',
+        footerTrust: 'Análisis visual de estilo, simple y elegante.',
+        msgImagesOnly: 'Solo se aceptan imágenes.',
+        msgSuccess: 'Informe generado con éxito.',
+        msgError: 'Error en el análisis.',
+        msgNetworkError: 'Error de red: ',
+        msgGenerateFirst: 'Genera un informe primero.',
+        msgExportOk: 'Descarga del informe iniciada.',
+        msgExportError: 'Error al exportar.',
+        msgAnalyzing: 'Análisis en curso…',
+      },
+    };
+
+    let lang = localStorage.getItem('styleScanLang') || 'fr';
+    if (!t[lang]) lang = 'fr';
+
+    function setLang(l) {
+      lang = l;
+      localStorage.setItem('styleScanLang', l);
+      document.documentElement.lang = l === 'fr' ? 'fr' : l === 'es' ? 'es' : 'en';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[lang][key]) el.textContent = t[lang][key];
+      });
+      document.querySelectorAll('.faq-trigger').forEach(btn => {
+        const span = btn.querySelector('span');
+        if (span) {
+          const key = span.getAttribute('data-i18n');
+          if (key && t[lang][key]) span.textContent = t[lang][key];
+        }
+      });
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+      });
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => setLang(btn.getAttribute('data-lang')));
+    });
+    setLang(lang);
+
+    document.querySelectorAll('.faq-trigger').forEach(trigger => {
+      trigger.addEventListener('click', () => {
+        const item = trigger.closest('.faq-item');
+        const panel = item.querySelector('.faq-panel');
+        const isOpen = item.classList.toggle('open');
+        trigger.setAttribute('aria-expanded', isOpen);
+        panel.style.maxHeight = isOpen ? '500px' : '0';
+      });
+    });
+
     const uploadZone = document.getElementById('uploadZone');
     const fileInput = document.getElementById('fileInput');
     const previewList = document.getElementById('previewList');
@@ -330,7 +870,6 @@
       messageEl.innerHTML = `<div class="message ${type}">${text}</div>`;
       messageEl.style.display = 'block';
     }
-
     function clearMessage() {
       messageEl.innerHTML = '';
       messageEl.style.display = 'none';
@@ -342,14 +881,12 @@
         const url = URL.createObjectURL(file);
         const div = document.createElement('div');
         div.className = 'preview-item';
-        div.innerHTML = `
-          <img src="${url}" alt="Preview">
-          <button type="button" class="remove" data-idx="${i}" aria-label="Retirer">×</button>
-        `;
+        div.innerHTML = `<img src="${url}" alt=""><button type="button" class="remove" data-idx="${i}" aria-label="Remove">×</button>`;
         div.querySelector('.remove').onclick = () => removeFile(i);
         previewList.appendChild(div);
       });
       btnAnalyze.disabled = selectedFiles.length === 0;
+      btnAnalyze.textContent = t[lang].btnStartAnalysis;
     }
 
     function removeFile(idx) {
@@ -360,21 +897,17 @@
     function addFiles(files) {
       const allowed = Array.from(files).filter(f => f.type.startsWith('image/'));
       selectedFiles.push(...allowed);
-      if (allowed.length !== files.length) showMessage('Seules les images sont acceptées.', 'error');
+      if (allowed.length !== files.length) showMessage(t[lang].msgImagesOnly, 'error');
       updatePreview();
       clearMessage();
     }
 
-    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('click', (e) => { if (!e.target.closest('.remove')) fileInput.click(); });
     fileInput.addEventListener('change', (e) => {
       addFiles(e.target.files);
       e.target.value = '';
     });
-
-    uploadZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadZone.classList.add('dragover');
-    });
+    uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
     uploadZone.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -389,61 +922,78 @@
       reportCard.classList.remove('visible');
     });
 
+    document.getElementById('btnScrollUpload').addEventListener('click', () => {
+      document.getElementById('uploadSection').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    const exampleReport = {
+      fr: "1. Description visuelle générale\n\nLes photos montrent une tenue décontractée avec une silhouette équilibrée.\n\n2. Points forts du style actuel\n\nLes coupes choisies mettent en valeur la silhouette. Les tons neutres créent une base versatile.\n\n3. Recommandations\n\nEncolures en V pour allonger la ligne. Matières fluides pour un confort optimal.\n\n4. Conclusion\n\nVotre style actuel est cohérent. Quelques ajustements de coupes et de couleurs pourraient le renforcer.",
+      en: "1. General visual description\n\nThe photos show a casual outfit with a balanced silhouette.\n\n2. Strengths of the current style\n\nThe chosen cuts flatter the silhouette. Neutral tones create a versatile base.\n\n3. Recommendations\n\nV-necklines to lengthen the line. Fluid fabrics for optimal comfort.\n\n4. Conclusion\n\nYour current style is coherent. A few adjustments in cuts and colors could enhance it.",
+      es: "1. Descripción visual general\n\nLas fotos muestran un look casual con una silueta equilibrada.\n\n2. Puntos fuertes del estilo actual\n\nLos cortes elegidos favorecen la silueta. Los tonos neutros crean una base versátil.\n\n3. Recomendaciones\n\nEscotes en V para alargar la línea. Tejidos fluidos para mayor comodidad.\n\n4. Conclusión\n\nTu estilo actual es coherente. Pequeños ajustes en cortes y colores podrían mejorarlo.",
+    };
+
+    document.getElementById('btnExampleReport').addEventListener('click', () => {
+      reportContent.textContent = exampleReport[lang] || exampleReport.fr;
+      reportMeta.textContent = t[lang].reportGeneratedOn + ' ' + new Date().toLocaleString(lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-US');
+      reportCard.classList.add('visible');
+      reportCard.scrollIntoView({ behavior: 'smooth' });
+      window.lastReport = reportContent.textContent;
+    });
+
     btnAnalyze.addEventListener('click', async () => {
       if (selectedFiles.length === 0) return;
       clearMessage();
       btnAnalyze.disabled = true;
-      btnAnalyze.innerHTML = '<span class="loader"></span> Analyse en cours…';
+      btnAnalyze.innerHTML = '<span class="loader"></span> ' + t[lang].msgAnalyzing;
+      uploadZone.classList.add('loading');
 
       const formData = new FormData();
       selectedFiles.forEach(f => formData.append('images', f));
 
       try {
-        const res = await fetch('/api/analyze', {
-          method: 'POST',
-          body: formData,
-        });
+        const res = await fetch('/api/analyze', { method: 'POST', body: formData });
         const data = await res.json().catch(() => ({}));
 
         if (data.success && data.rapport) {
-          reportMeta.textContent = `Rapport généré le ${new Date().toLocaleString('fr-FR')}`;
+          reportMeta.textContent = t[lang].reportGeneratedOn + ' ' + new Date().toLocaleString(lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-US');
           reportContent.textContent = data.rapport;
           reportCard.classList.add('visible');
           reportCard.scrollIntoView({ behavior: 'smooth' });
           window.lastReport = data.rapport;
-          showMessage('Rapport généré avec succès.', 'success');
+          showMessage(t[lang].msgSuccess, 'success');
         } else {
-          showMessage(data.error || 'Erreur lors de l’analyse.', 'error');
+          showMessage(data.error || t[lang].msgError, 'error');
         }
       } catch (err) {
-        showMessage('Erreur réseau : ' + err.message, 'error');
+        showMessage(t[lang].msgNetworkError + err.message, 'error');
       } finally {
         btnAnalyze.disabled = false;
-        btnAnalyze.textContent = 'Lancer l’analyse';
+        btnAnalyze.textContent = t[lang].btnStartAnalysis;
+        uploadZone.classList.remove('loading');
       }
     });
 
     btnExport.addEventListener('click', async () => {
       const rapport = window.lastReport;
       if (!rapport) {
-        showMessage('Générez d’abord un rapport.', 'error');
+        showMessage(t[lang].msgGenerateFirst, 'error');
         return;
       }
       try {
         const res = await fetch('/api/export-report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rapport }),
+          body: JSON.stringify({ rapport, lang }),
         });
         const data = await res.json();
         if (data.success && data.download_url) {
           window.open(data.download_url, '_blank');
-          showMessage('Téléchargement du rapport lancé.', 'success');
+          showMessage(t[lang].msgExportOk, 'success');
         } else {
-          showMessage(data.error || 'Erreur export.', 'error');
+          showMessage(data.error || t[lang].msgExportError, 'error');
         }
       } catch (err) {
-        showMessage('Erreur : ' + err.message, 'error');
+        showMessage(t[lang].msgNetworkError + err.message, 'error');
       }
     });
   </script>
