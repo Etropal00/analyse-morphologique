@@ -1005,6 +1005,7 @@
 
       const formData = new FormData();
       selectedFiles.forEach(f => formData.append('images', f));
+      formData.append('lang', lang);
 
       try {
         const res = await fetch('/api/analyze', { method: 'POST', body: formData });
@@ -1042,8 +1043,18 @@
           body: JSON.stringify({ rapport, lang }),
         });
         const data = await res.json();
-        if (data.success && data.download_url) {
-          window.open(data.download_url, '_blank');
+        if (data.success) {
+          if (data.html_content) {
+            const blob = new Blob([data.html_content], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = data.filename || 'rapport_style.html';
+            a.click();
+            URL.revokeObjectURL(url);
+          } else if (data.download_url) {
+            window.open(data.download_url, '_blank');
+          }
           showMessage(t[lang].msgExportOk, 'success');
         } else {
           showMessage(data.error || t[lang].msgExportError, 'error');

@@ -33,7 +33,7 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 Mo max
 app.config["UPLOAD_FOLDER"] = str(UPLOAD_FOLDER)
 
 
-def analyze_images_with_ai(image_paths: list) -> dict:
+def analyze_images_with_ai(image_paths: list, report_lang: str = "fr") -> dict:
     """Envoie les images à l'API (OpenAI ou IA locale type Ollama) et retourne l'analyse."""
     _load_env()
     base_url = (os.getenv("OPENAI_BASE_URL") or "").strip()
@@ -66,21 +66,32 @@ def analyze_images_with_ai(image_paths: list) -> dict:
         return {"success": False, "error": str(e), "rapport": None}
 
     system_msg = (
-        "You are a professional fashion and style consultant. When you receive photos, the user is asking for "
-        "personalized style and wardrobe advice. Your job is to produce a helpful style report in French. "
-        "Always respond with the full report. Do not refuse or say you cannot help."
+        "Tu es un conseiller en image et style. L'utilisateur envoie ses photos pour une analyse visuelle utile. "
+        "Produis un rapport structuré, actionnable et bienveillant. Réponds toujours par le rapport complet, sans refus."
     )
 
+    lang_instruction = (
+        "Réponds en français." if report_lang == "fr" else
+        "Respond in English." if report_lang == "en" else
+        "Responde en español."
+    )
     user_text = (
-        "Voici des photos fournies par l'utilisateur pour un conseil en style. "
-        "Rédige un rapport détaillé EN FRANÇAIS, uniquement le rapport, sans phrase d'introduction ni refus.\n\n"
-        "Structure du rapport :\n"
-        "1. Description de ce qui est visible (tenue, contexte)\n"
-        "2. Ce qui fonctionne bien dans le style actuel\n"
-        "3. Conseils vêtements : coupes, matières, encolures à privilégier\n"
-        "4. Suggestions de couleurs et d'associations\n"
-        "5. Recommandations pratiques et conclusion\n\n"
-        "Sois concret et bienveillant. Réponds UNIQUEMENT par le texte du rapport."
+        "Analyse the provided photos and write a USEFUL, ACTIONABLE style analysis report. "
+        + lang_instruction + "\n\n"
+        "Required structure (use these exact section titles):\n\n"
+        "## 1. WHAT IS VISIBLE\n"
+        "Brief description of what you see: outfit(s), silhouette, context. Be factual.\n\n"
+        "## 2. STRENGTHS\n"
+        "What already works well (cuts, colors, balance). 2 to 4 concrete points.\n\n"
+        "## 3. CLOTHING RECOMMENDATIONS\n"
+        "Cuts to favor, neckline types, fabrics, lengths. Precise, applicable advice.\n\n"
+        "## 4. COLORS AND COMBINATIONS\n"
+        "Recommended palette, colors to avoid or try, combination ideas.\n\n"
+        "## 5. PRACTICAL TIPS\n"
+        "3 to 5 simple actions to take (targeted purchases, pieces to add or avoid).\n\n"
+        "## 6. SUMMARY\n"
+        "In 2–3 sentences: main takeaway and key message.\n\n"
+        "Output ONLY the report, no preamble. Be concrete, positive and useful."
     )
 
     content = [{"type": "text", "text": user_text}]
@@ -159,7 +170,10 @@ def analyze():
         if not saved_paths:
             return jsonify({"success": False, "error": "Aucune image enregistrée"}), 400
 
-        result = analyze_images_with_ai(saved_paths)
+        report_lang = (request.form.get("lang") or "fr").lower()[:2]
+        if report_lang not in ("fr", "en", "es"):
+            report_lang = "fr"
+        result = analyze_images_with_ai(saved_paths, report_lang)
 
         # Nettoyage des fichiers temporaires
         for p in saved_paths:
@@ -216,23 +230,30 @@ def export_report():
     date_str = datetime.now().strftime("%d/%m/%Y %H:%M")
     html_lang = "fr" if lang == "fr" else "es" if lang == "es" else "en"
 
-    html = f"""<!DOCTYPE html>
+    rapport_escaped = html.escape(rapport)
+    rapport_escaped = rapport_escaped.replace("\n\n", "</p><p>").replace("\n", "<br>")
+    rapport_escaped = "<p>" + rapport_escaped + "</p>"
+
+    html_body = f"""<!DOCTYPE html>
 <html lang="{html_lang}">
 <head>
   <meta charset="UTF-8">
   <title>{title} — StyleScan AI</title>
   <style>
-    body {{ font-family: 'Segoe UI', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #1a1a1a; }}
-    h1 {{ color: #2d3748; border-bottom: 2px solid #4a5568; padding-bottom: 0.5rem; }}
-    .meta {{ color: #718096; font-size: 0.9rem; margin-bottom: 2rem; }}
-    pre {{ white-space: pre-wrap; background: #f7fafc; padding: 1rem; border-radius: 8px; }}
+    body {{ font-family: 'Segoe UI', system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 2rem; line-height: 1.65; color: #1a1a1a; }}
+    h1 {{ color: #2d3748; border-bottom: 2px solid #c4a574; padding-bottom: 0.5rem; font-size: 1.5rem; }}
+    h2 {{ color: #4a5568; font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }}
+    .meta {{ color: #718096; font-size: 0.9rem; margin-bottom: 1.5rem; }}
+    .content {{ margin-top: 1rem; }}
+    .content p {{ margin: 0.75rem 0; }}
+    .content h2:first-child {{ margin-top: 0; }}
   </style>
 </head>
 <body>
   <h1>{title}</h1>
   <p class="meta">{meta_label} {date_str} — StyleScan AI</p>
   <div class="content">
-    <pre>{html.escape(rapport)}</pre>
+    {rapport_escaped}
   </div>
 </body>
 </html>"""
@@ -241,12 +262,13 @@ def export_report():
     reports_dir.mkdir(parents=True, exist_ok=True)
     filename = f"rapport_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     filepath = reports_dir / filename
-    filepath.write_text(html, encoding="utf-8")
+    filepath.write_text(html_body, encoding="utf-8")
 
     return jsonify({
         "success": True,
         "download_url": f"/static/reports/{filename}",
         "filename": filename,
+        "html_content": html_body,
     })
 
 
